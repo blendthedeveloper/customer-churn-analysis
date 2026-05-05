@@ -1,3 +1,9 @@
+-- Customer Churn Risk Analysis
+-- Purpose: Identify at-risk users based on inactivity and declining spend
+-- Grain: 1 row per user (latest state)
+
+
+
 with clean_orders as(select distinct user_id,order_id,try_cast(order_date as date) order_date,amount
 from orders
 where amount>0 and try_cast(order_date as date) is not null),
