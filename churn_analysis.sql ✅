@@ -1,0 +1,37 @@
+with clean_orders as(select distinct user_id,order_id,try_cast(order_date as date) order_date,amount
+from orders
+where amount>0 and try_cast(order_date as date) is not null),
+
+purchase as(select *,row_number() over(partition by user_id order by order_date,order_id) as purchase_number,
+lag(amount) over(partition by user_id order by order_date,order_id) as prev_amount,
+lag(order_date) over(partition by user_id order by order_date,order_id) as prev_order_date
+from clean_orders),
+
+trend as(select * ,case when amount>prev_amount then 'Increasing'
+when amount<prev_amount then 'Decreasing'
+when amount=prev_amount then 'Same'
+else 'no_prev' end as trend_type
+from purchase),
+
+newtrend as (select *,lag(trend_type) over(partition by user_id order by order_date ,order_id ) as prev_trend
+from trend),
+
+finaltable as (select *,row_number() over(partition by user_id order by order_date desc,order_id desc) as latest_rank
+from newtrend)
+
+select *,case when purchase_number=1 then 'First'
+else 'Repeat' end as purchase_type,
+datediff(day,prev_order_date,order_date) as days_since_last_order,
+case when datediff(day,prev_order_date,order_date) >=30 then 'Risk'
+when trend_type='Decreasing' and prev_trend='Decreasing' then 'Risk'
+else 'Safe' end as risk_flag,
+CASE
+    WHEN datediff(day,prev_order_date,order_date) >= 30 THEN 'Inactive 30+ Days'
+    WHEN trend_type = 'Decreasing' AND prev_trend = 'Decreasing' THEN 'Declining Spend'
+    ELSE null
+END AS risk_reason 
+
+
+from finaltable
+where latest_rank=1 
+order by user_id
