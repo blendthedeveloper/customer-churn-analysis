@@ -1,5 +1,6 @@
 # 📊 Customer Churn Risk Analysis Dashboard
-
+## 📊 Dashboard Preview
+![Dashboard](dashboard.png)
 ## 📌 Business Problem
 
 Customer churn directly impacts revenue. The goal of this project is to identify users at risk of churn and recommend actions to retain them.
